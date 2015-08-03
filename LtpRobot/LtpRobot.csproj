@@ -44,14 +44,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DfsControler.cs" />
+    <Compile Include="ExploreRobotControler.cs" />
     <Compile Include="GameManager.cs" />
+    <Compile Include="IControler.cs" />
     <Compile Include="MapObserver.cs" />
     <Compile Include="MapUtils.cs" />
-    <Compile Include="IControler.cs" />
+    <Compile Include="MyCoolExceptionForStopingDfsExecution.cs" />
     <Compile Include="Point.cs" />
-    <Compile Include="RobotClient.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RobotClient.cs" />
     <Compile Include="RobotManager.cs" />
     <Compile Include="RobotMap.cs" />
   </ItemGroup>

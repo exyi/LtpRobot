@@ -38,7 +38,6 @@ namespace LtpRobot
             tcp = new TcpClient(host, port);
             stream = tcp.GetStream();
             writer = new StreamWriter(stream, Encoding.ASCII, 1);
-            writer.AutoFlush = true;
             reader = new StreamReader(stream);
         }
 
@@ -52,6 +51,24 @@ namespace LtpRobot
             writer.Write(userName + '\n');
             writer.Write(token + '\n');
             writer.Flush();
+        }
+
+        public IEnumerable<RobotActionResult> BatchExecute(int ri, params RobotAction[] actions)
+            => BatchExecute(ri, (IEnumerable<RobotAction>)actions);
+
+        public IEnumerable<RobotActionResult> BatchExecute(int ri, IEnumerable<RobotAction> actions)
+        {
+            int count = 0;
+            foreach (var a in actions)
+            {
+                writer.Write(ri + " " + (char)a + '\n');
+                count++;
+            }
+            writer.Flush();
+            for (int i = 0; i < count; i++)
+            {
+                yield return Parse(reader.ReadLine());
+            }
         }
 
         public RobotActionResult Execute(int number, RobotAction action)
