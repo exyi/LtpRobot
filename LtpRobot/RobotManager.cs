@@ -92,34 +92,34 @@ namespace LtpRobot
 
         private RobotResult MoveInternal(RobotAction action)
         {
-            if (action != RobotAction.Go
-                && Map.Explored(Position.Move(0))
-                && Map.Explored(Position.Move(1))
-                && Map.Explored(Position.Move(2))
-                && Map.Explored(Position.Move(3))
-                )
-            {
-                MoveBuf(action);
-                return RobotResult.Ok;
-            }
-            var p = Position.Move((int)Rot);
-            if (Map.Explored(p) && action == RobotAction.Go)
-            {
-                var t = Map[p];
-                if (t.IsFree()
-                    && Map.Explored(p.Move((int)Rot + 3))
-                    && Map.Explored(p.Move((int)Rot))
-                    && Map.Explored(p.Move((int)Rot + 1))
-                    )
-                {
-                    MoveBuf(RobotAction.Go);
-                    return RobotResult.Ok;
-                }
-                else if (t == MapTileResult.Wall)
-                {
-                    return RobotResult.GoDenied;
-                }
-            }
+            //if (action != RobotAction.Go
+            //    && Map.Explored(Position.Move(0))
+            //    && Map.Explored(Position.Move(1))
+            //    && Map.Explored(Position.Move(2))
+            //    && Map.Explored(Position.Move(3))
+            //    )
+            //{
+            //    MoveBuf(action);
+            //    return RobotResult.Ok;
+            //}
+            //var p = Position.Move((int)Rot);
+            //if (Map.Explored(p) && action == RobotAction.Go)
+            //{
+            //    var t = Map[p];
+            //    if (t.IsFree()
+            //        && Map.Explored(p.Move((int)Rot + 3))
+            //        && Map.Explored(p.Move((int)Rot))
+            //        && Map.Explored(p.Move((int)Rot + 1))
+            //        )
+            //    {
+            //        MoveBuf(RobotAction.Go);
+            //        return RobotResult.Ok;
+            //    }
+            //    else if (t == MapTileResult.Wall)
+            //    {
+            //        return RobotResult.GoDenied;
+            //    }
+            //}
 
             Flush();
             var result = Client.Execute(RobotId, action);

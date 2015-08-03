@@ -10,7 +10,7 @@ namespace LtpRobot
     {
         static void Main(string[] args)
         {
-            var c = Connect("kilometr");
+            var c = Connect("feromon");
             var gm = new GameManager();
             gm.Client = c;
             gm.ConsoleClient();

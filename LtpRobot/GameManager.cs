@@ -29,7 +29,23 @@ namespace LtpRobot
                 } },
                 {"save", p => (p.Length == 0 ? CurrentRobot : GetRobot(int.Parse(p[0]))).Map.Save(p.FirstOrDefault() ?? CurrentRobotId.ToString()) },
                 {"load", p => CurrentRobot.Map.LoadMap(p[0]) },
-                {"explore", p =>SetRobotControler(CurrentRobotId, new ExploreRobotControler(), p) }
+                {"explore", p =>SetRobotControler(CurrentRobotId, new ExploreRobotControler(), p) },
+                {"random", p => {
+                    var len = int.Parse(p[0]);
+                    var random = new Random();
+                    for (int i = 0; i < len; i++)
+                    {
+                    switch (random.Next(3))
+                    {
+                       case 0: CurrentRobot.Client.Execute(CurrentRobot.RobotId, RobotAction.Left);
+                           break;
+                       case 1: CurrentRobot.Client.Execute(CurrentRobot.RobotId, RobotAction.Right);
+                           break;
+                       case 2: CurrentRobot.Client.Execute(CurrentRobot.RobotId, RobotAction.Go);
+                           break;
+                    }
+                    }
+                } }
             };
         }
 
