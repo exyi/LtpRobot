@@ -45,7 +45,8 @@ namespace LtpRobot
                            break;
                     }
                     }
-                } }
+                } },
+                {"gohome", p => CurrentRobot.GoHome() }
             };
         }
 
@@ -91,7 +92,24 @@ namespace LtpRobot
         public void SetRobotControler(int robotId, IRobotControler controler, string[] args)
         {
             cts = new CancellationTokenSource();
-            Task.Run(() => controler.Execute(GetRobot(robotId), cts.Token, args));
+            Task.Run(() => controler.Execute(GetRobot(robotId), cts.Token, args))
+                .ContinueWith(t =>
+                {
+                    if(t.Exception != null)
+                    {
+
+                    }
+                });
+        }
+        private bool watcherRunning = false;
+        public async void Watcher(RobotClient client)
+        {
+            while(watcherRunning)
+            {
+                var c1 = client.Counter;
+                await Task.Delay(1000);
+                Console.Title = "rps: " + (client.Counter - c1);
+            }
         }
 
         public CancellationTokenSource cts = null;
@@ -151,33 +169,45 @@ namespace LtpRobot
                         if (cts != null) cts.Cancel();
                         cts = null;
                     }
+                    else if(key.KeyChar == 'm')
+                    {
+                        watcherRunning = !watcherRunning;
+                        Watcher(CurrentRobot.Client);
+                    }
                     else if (key.KeyChar == 'w')
                         CurrentRobot.Move(RobotAction.Wait);
                     else if (key.KeyChar == 'c')
                         Console.Clear();
-                    if (renderer != null && renderer.Robot == null)
-                    {
-                        if (key.Key == ConsoleKey.UpArrow)
-                            renderer.MapY--;
-                        else if (key.Key == ConsoleKey.LeftArrow)
-                            renderer.MapX--;
-                        else if (key.Key == ConsoleKey.RightArrow)
-                            renderer.MapX++;
-                        else if (key.Key == ConsoleKey.DownArrow)
-                            renderer.MapY++;
-                        renderer.Render();
-                    }
-                    else
-                    {
-                        if (key.Key == ConsoleKey.UpArrow)
-                            CurrentRobot.GoTo(Rotation.Up);
-                        else if (key.Key == ConsoleKey.LeftArrow)
-                            CurrentRobot.GoTo(Rotation.Left);
-                        else if (key.Key == ConsoleKey.RightArrow)
-                            CurrentRobot.GoTo(Rotation.Right);
-                        else if (key.Key == ConsoleKey.DownArrow)
-                            CurrentRobot.GoTo(Rotation.Down);
-                    }
+                    // move map
+                    if (key.Key == ConsoleKey.UpArrow)
+                        renderer.MapY--;
+                    else if (key.Key == ConsoleKey.LeftArrow)
+                        renderer.MapX--;
+                    else if (key.Key == ConsoleKey.RightArrow)
+                        renderer.MapX++;
+                    else if (key.Key == ConsoleKey.DownArrow)
+                        renderer.MapY++;
+                    // move robot
+                    // hex:
+                    else if (key.Key == ConsoleKey.NumPad8)
+                        CurrentRobot.GoTo(Rotation.Up);
+                    else if (key.Key == ConsoleKey.NumPad2)
+                        CurrentRobot.GoTo(Rotation.Down);
+#if HEX
+                    else if (key.Key == ConsoleKey.NumPad9)
+                        CurrentRobot.GoTo(Rotation.RightUp);
+                    else if (key.Key == ConsoleKey.NumPad6)
+                        CurrentRobot.GoTo(Rotation.RightDown);
+                    else if (key.Key == ConsoleKey.NumPad4)
+                        CurrentRobot.GoTo(Rotation.LeftUp);
+                    else if (key.Key == ConsoleKey.NumPad1)
+                        CurrentRobot.GoTo(Rotation.LeftDown);
+#else
+                    else if (key.Key == ConsoleKey.NumPad4)
+                        CurrentRobot.GoTo(Rotation.Left);
+                    else if (key.Key == ConsoleKey.NumPad6)
+                        CurrentRobot.GoTo(Rotation.Right);
+#endif
                 }
                 catch (Exception e)
                 {

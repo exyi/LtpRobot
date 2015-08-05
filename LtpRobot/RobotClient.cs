@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LtpRobot
@@ -16,6 +17,8 @@ namespace LtpRobot
         private StreamReader reader;
         private StreamWriter writer;
         private TcpClient tcp;
+        public int Counter = 0;
+        bool dummyWait = false;
 
         public static RobotClient Connect(string host, int port)
         {
@@ -36,6 +39,7 @@ namespace LtpRobot
         private void Init()
         {
             tcp = new TcpClient(host, port);
+
             stream = tcp.GetStream();
             writer = new StreamWriter(stream, Encoding.ASCII, 1);
             reader = new StreamReader(stream);
@@ -43,7 +47,7 @@ namespace LtpRobot
 
         internal void Reset()
         {
-            
+
         }
 
         public void Init(string userName, string token)
@@ -54,20 +58,44 @@ namespace LtpRobot
         }
 
         public IEnumerable<RobotActionResult> BatchExecute(int ri, params RobotAction[] actions)
-            => BatchExecute(ri, (IEnumerable<RobotAction>)actions);
+            => BatchExecute(ri, (ICollection<RobotAction>)actions);
 
-        public IEnumerable<RobotActionResult> BatchExecute(int ri, IEnumerable<RobotAction> actions)
+        public IEnumerable<RobotActionResult> BatchExecute(int ri, ICollection<RobotAction> actions)
         {
-            int count = 0;
-            foreach (var a in actions)
+            if (actions.Count <= 3)
             {
-                writer.Write(ri + " " + (char)a + '\n');
-                count++;
+                foreach (var a in actions)
+                {
+                    writer.Write(ri + " " + (char)a + '\n');
+                    writer.Flush();
+                }
+                if (dummyWait) { reader.ReadLine(); dummyWait = false; }
+                for (int i = 0; i < actions.Count; i++)
+                {
+                    Interlocked.Increment(ref Counter);
+                    yield return Parse(reader.ReadLine());
+                }
             }
-            writer.Flush();
-            for (int i = 0; i < count; i++)
+            else
             {
+                int count = 0;
+                foreach (var a in actions)
+                {
+                    count++;
+                    writer.Write(ri + " " + (char)a + '\n');
+                }
+                writer.Flush();
+                if (dummyWait) reader.ReadLine();
+                writer.Write(ri + " w" + '\n');
+                dummyWait = true;
+                Interlocked.Increment(ref Counter);
                 yield return Parse(reader.ReadLine());
+                writer.Flush();
+                for (int i = 1; i < count; i++)
+                {
+                    Interlocked.Increment(ref Counter);
+                    yield return Parse(reader.ReadLine());
+                }
             }
         }
 
@@ -75,6 +103,8 @@ namespace LtpRobot
         {
             writer.Write(number + " " + (char)action + '\n');
             writer.Flush();
+            if (dummyWait) { reader.ReadLine(); dummyWait = false; }
+            Interlocked.Increment(ref Counter);
             return Parse(reader.ReadLine());
         }
 
@@ -114,11 +144,11 @@ namespace LtpRobot
         public MapTileResult RightMapTile;
     }
 
-    public enum RobotAction: byte
+    public enum RobotAction : byte
     {
         Right = (byte)'r',
-        Left = (byte)'l', 
-        Wait = (byte)'w', 
+        Left = (byte)'l',
+        Wait = (byte)'w',
         Go = (byte)'g'
     }
 
@@ -130,7 +160,7 @@ namespace LtpRobot
         Error = (byte)'-'
     }
 
-    public enum MapTileResult: byte
+    public enum MapTileResult : byte
     {
         Free = (byte)'.',
         Wall = (byte)'#',

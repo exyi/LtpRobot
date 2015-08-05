@@ -42,13 +42,14 @@ namespace LtpRobot
                 i++;
                 foreach (var n in nf)
                 {
-                    if (!d.ContainsKey(n) && map.Explored(n) && map[n].IsFree())
+                    MapTileResult r;
+                    if (!d.ContainsKey(n) && map.TryGetTile(n, out r) && r.IsFree())
                     {
                         q.Enqueue(n);
                         d[n] = i;
-                        if (goalPredicate(e))
+                        if (goalPredicate(n))
                         {
-                            return e;
+                            return n;
                         }
                     }
                 }
@@ -73,14 +74,14 @@ namespace LtpRobot
                         break;
                     }
                 }
-                if (j == 4) throw new Exception();
+                if (j == nf.Length) throw new Exception();
             }
             var ress = res.ToArray();
             ReversePath(ress);
             return ress;
         }
 
-        public static IEnumerable<Rotation> ShortestPaths(this RobotMap map, Point from, IEnumerable<Point> to)
+        public static IEnumerable<Rotation> ShortestPath(this RobotMap map, Point from, IEnumerable<Point> to)
         {
             var toHash = new HashSet<Point>(to);
             var d = new Dictionary<Point, int>(); d.Add(from, 0);
@@ -101,9 +102,33 @@ namespace LtpRobot
         {
             for (int i = 0; i < path.Length; i++)
             {
-                path[i] = (Rotation)(((byte)path[i] + 2) % 4);
+                path[i] = (Rotation)(((byte)path[i] + 3) % 6);
             }
             Array.Reverse(path);
+        }
+
+        public static Rotation Rot180(this Rotation r)
+        {
+#if HEX
+            return (Rotation)(((byte)r + 3) % 6);
+#else
+            return (Rotation)(((byte)r + 2) % 4);
+#endif
+        }
+
+        public static RobotAction[] ToActions(this Rotation rot, Rotation current = Rotation.Up)
+        {
+            var r = (int)rot;
+            r = (r - (int)current + Program.Level) % Program.Level;
+
+            if (r == 0) return new[] { RobotAction.Go };
+            if (r == 1) return new[] { RobotAction.Right, RobotAction.Go };
+            if (r == 2) return new[] { RobotAction.Right, RobotAction.Right, RobotAction.Go };
+            // down
+            if (r == 3) return new[] { RobotAction.Left, RobotAction.Left, RobotAction.Left, RobotAction.Go };
+            if (r == 4) return new[] { RobotAction.Left, RobotAction.Left, RobotAction.Go };
+            if (r == 5) return new[] { RobotAction.Left, RobotAction.Go };
+            throw new Exception("WTF???");
         }
     }
 }

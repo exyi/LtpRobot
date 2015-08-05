@@ -16,26 +16,21 @@ namespace LtpRobot
             DoDfs(robot, token, int.Parse(args.FirstOrDefault() ?? int.MaxValue.ToString()));
         }
 
-        public RobotAction[] NextStep(RobotManager robot, RobotResult result, int limit)
+        public bool NextStep(RobotManager robot, RobotResult result, int limit)
         {
-            if (!robot.Map.Explored(robot.Position.Move((byte)robot.Rot + 2)))
-                return new[] { RobotAction.Left };
+            if (robot.Position.NearFour().Any(n => !robot.Map.Explored(n)))
+            {
+                robot.Move(RobotAction.Left);
+                return true;
+            }
 
-            var r = (byte)GetNextStepPoint(robot, limit);
-            r -= (byte)robot.Rot;
-            r += 4;
-            r %= 4;
-            if (r == 0) return new[] { RobotAction.Go };
-            if (r == 1) return new[] { RobotAction.Right, RobotAction.Go };
-            if (r == 2) return new[] { RobotAction.Left, RobotAction.Left, RobotAction.Go };
-            if (r == 3) return new[] { RobotAction.Left, RobotAction.Go };
-            throw new Exception("WTF");
+            return GetNextStepPoint(robot, limit);
         }
 
-        private Rotation GetNextStepPoint(RobotManager robot, int limit)
+        private bool GetNextStepPoint(RobotManager robot, int limit)
         {
             var a = robot.Position.NearFour();
-            var mi = 2;
+            var mi = -1;
             var max = 0;
             for (int i = 0; i < a.Length; i++)
             {
@@ -49,10 +44,48 @@ namespace LtpRobot
             if (max <= 1 || robot.Path.Count >= limit /* ||
                 (robot.Map.Explored(robot.Position) && robot.Map[robot.Position] == MapTileResult.OpenDoor)*/)
             {
-                if (robot.Path.Count == 0) throw new MyCoolExceptionForStopingDfsExecution();
-                return (Rotation)(((byte)robot.Path.Last() + 2) % 4);
+                if (robot.Path.Count == 0) return false;
+                StackUnroll(robot, limit);
             }
-            return (Rotation)mi;
+            else robot.GoTo((Rotation)mi);
+            return true;
+        }
+
+        private void StackUnroll(RobotManager robot, int limit)
+        {
+            var pos = robot.Position;
+            var count = 0;
+            while (true)
+            {
+                if (robot.Path.Count - count < limit)
+                {
+                    foreach (var n in pos.NearFour())
+                    {
+                        MapTileResult mt;
+                        if(!robot.Map.TryGetTile(n, out mt) || (mt.IsFree() &&
+                            !n.NearFour().All(robot.Map.Explored)))
+                        {
+                            break;
+                        }
+                    }
+                }
+                if (count >= robot.Path.Count)
+                {
+                    break;
+                }
+                count++;
+                pos = pos.Move((byte)robot.Path[robot.Path.Count - count].Rot180());
+            }
+            if (count == 1)
+            {
+                robot.GoTo(robot.Path[robot.Path.Count - 1].Rot180());
+            }
+            else
+            {
+                var newPath = robot.Path.Take(robot.Path.Count - count).ToList();
+                robot.GoTo(pos, restorePath: false, flushOnNewData: false);
+                robot.Path = newPath;
+            }
         }
 
         private int GetPriority(RobotMap map, Point p, int rotation)
@@ -63,8 +96,10 @@ namespace LtpRobot
             if (t == MapTileResult.Wall || t == MapTileResult.Robot) return 0;
             if (t == MapTileResult.ClosedDoor) return 0;
             var count = 1;
-            if (!map.Explored(p.Move(rotation + 3))) count++;
+            if (!map.Explored(p.Move(rotation + 4))) count++;
+            if (!map.Explored(p.Move(rotation + 5))) count++;
             if (!map.Explored(p.Move(rotation))) count++;
+            if (!map.Explored(p.Move(rotation + 2))) count++;
             if (!map.Explored(p.Move(rotation + 1))) count++;
             return count;
         }
@@ -74,10 +109,8 @@ namespace LtpRobot
             try
             {
                 var r = robot.Move(RobotAction.Wait);
-                while (!token.IsCancellationRequested)
+                while (!token.IsCancellationRequested && NextStep(robot, r, limit))
                 {
-                    var s = NextStep(robot, r, limit);
-                    foreach (var x in s) robot.Move(x);
                 }
             }
             catch (MyCoolExceptionForStopingDfsExecution)

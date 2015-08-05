@@ -24,11 +24,13 @@ namespace LtpRobot
             set { Map[new Point(x, y)] = value; Changed?.Invoke(); }
         }
 
+        public bool TryGetTile(Point p, out MapTileResult tile)
+            => Map.TryGetValue(p, out tile);
+
         public bool Explored(Point p)
         {
             return Map.ContainsKey(p);
         }
-
 
         public void AddMap(RobotMap map, Point offset)
         {

@@ -10,7 +10,7 @@ namespace LtpRobot
     {
         static void Main(string[] args)
         {
-            var c = Connect("feromon");
+            var c = Connect("rumpal");
             var gm = new GameManager();
             gm.Client = c;
             gm.ConsoleClient();
@@ -56,14 +56,28 @@ namespace LtpRobot
             c.Init(userName, token);
             return c;
         }
+#if HEX
+        public const int Level = 6;
+#else
+        public const int Level = 4;
+#endif
     }
 
     public enum Rotation : byte
     {
-        Up = 0,
-        Right = 1,
-        Down = 2,
-        Left = 3
+#if HEX
+        Up,
+        RightUp,
+        RightDown,
+        Down,
+        LeftDown,
+        LeftUp,
+#else
+        Up,
+        Right,
+        Down,
+        Left
+#endif
     }
 
     //class DfsMap
@@ -103,7 +117,7 @@ namespace LtpRobot
     //        }
     //    }
 
-        
+
 
     //    public void PrintMap()
     //    {

@@ -21,14 +21,16 @@ namespace LtpRobot
             var m = r.Map;
             while (!token.IsCancellationRequested)
             {
-                var from = (r.Position.GetHashCode() % 5 == 0) ? new Point(0, 0) : r.Position;
+                if ((r.Position.GetHashCode() % 5 == 30)) r.GoHome();
+                var from = r.Position;
                 var path = m.NearestNonExploredPointPath(from);
                 foreach (var rot in path)
                 {
                     r.GoTo(rot);
                 }
+                r.Flush();
                 r.Path.Clear();
-                new DfsControler().Execute(r, token, new[] { "500" });
+                new DfsControler().Execute(r, token, new[] { "350" });
                 //r.Map.Save(r.RobotId.ToString());
             }
         }
