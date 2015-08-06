@@ -39,7 +39,6 @@ namespace LtpRobot
         private void Init()
         {
             tcp = new TcpClient(host, port);
-
             stream = tcp.GetStream();
             writer = new StreamWriter(stream, Encoding.ASCII, 1);
             reader = new StreamReader(stream);
@@ -162,6 +161,7 @@ namespace LtpRobot
 
     public enum MapTileResult : byte
     {
+        Unknown = 0,
         Free = (byte)'.',
         Wall = (byte)'#',
         Goal = (byte)'$',

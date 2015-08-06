@@ -241,7 +241,7 @@ namespace LtpRobot
 
         private void SaveResult(int rot, MapTileResult tile)
         {
-            Map.Map[Position.Move(rot)] = tile;
+            Map[Position.Move(rot)] = tile;
         }
 
         public void Rot360()

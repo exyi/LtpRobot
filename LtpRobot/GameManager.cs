@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -28,26 +29,48 @@ namespace LtpRobot
                     Client.Reset();
                 } },
                 {"save", p => (p.Length == 0 ? CurrentRobot : GetRobot(int.Parse(p[0]))).Map.Save(p.FirstOrDefault() ?? CurrentRobotId.ToString()) },
+                { "nsave", p=> (p.Length == 0 ? CurrentRobot : GetRobot(int.Parse(p[0]))).Map.NewSave(p.FirstOrDefault() ?? CurrentRobotId.ToString()) },
                 {"load", p => CurrentRobot.Map.LoadMap(p[0]) },
+                {"nload", p => CurrentRobot.Map.NewLoadMap(p[0]) },
+                {"autoload", p=> CurrentRobot.Map.NewLoadMap(new DirectoryInfo(".").EnumerateFiles("*.robomap").OrderByDescending(f => f.LastWriteTime).First().FullName) },
                 {"explore", p =>SetRobotControler(CurrentRobotId, new ExploreRobotControler(), p) },
                 {"random", p => {
                     var len = int.Parse(p[0]);
                     var random = new Random();
-                    for (int i = 0; i < len; i++)
-                    {
-                    switch (random.Next(3))
-                    {
-                       case 0: CurrentRobot.Client.Execute(CurrentRobot.RobotId, RobotAction.Left);
-                           break;
-                       case 1: CurrentRobot.Client.Execute(CurrentRobot.RobotId, RobotAction.Right);
-                           break;
-                       case 2: CurrentRobot.Client.Execute(CurrentRobot.RobotId, RobotAction.Go);
-                           break;
-                    }
-                    }
+                    
                 } },
-                {"gohome", p => CurrentRobot.GoHome() }
+                {"gohome", p => CurrentRobot.GoHome() },
+                {"urandom", p =>
+                {
+                    while(true)
+                    {
+                        foreach (var i in CurrentRobot.Client.BatchExecute(CurrentRobot.RobotId, RandomStream(50000)))
+                        { }
+                    }
+                } }
             };
+        }
+
+        public static ICollection<RobotAction> RandomStream(int limit)
+        {
+            var arr = new RobotAction[limit];
+            var random = new Random();
+            for (int i = 0; i < limit; i++)
+            {
+                switch (random.Next(3))
+                {
+                    case 0:
+                        arr[i] = RobotAction.Left;
+                        break;
+                    case 1:
+                        arr[i] = RobotAction.Right;
+                        break;
+                    case 2:
+                        arr[i] = RobotAction.Go;
+                        break;
+                }
+            }
+            return arr;
         }
 
         public void SetMapObserve(int robotId)

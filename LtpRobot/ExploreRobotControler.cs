@@ -23,6 +23,7 @@ namespace LtpRobot
             {
                 if ((r.Position.GetHashCode() % 5 == 30)) r.GoHome();
                 var from = r.Position;
+                r.Flush();
                 var path = m.NearestNonExploredPointPath(from);
                 foreach (var rot in path)
                 {
