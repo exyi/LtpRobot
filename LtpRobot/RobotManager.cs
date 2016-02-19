@@ -42,7 +42,8 @@ namespace LtpRobot
 
         private RobotAction[] Expand(RobotAction action)
         {
-            if (action == RobotAction.Go && Map.Explored(Position) && (Map[Position] == MapTileResult.LeverA || Map[Position] == MapTileResult.LeverB))
+            MapTileResult r;
+            if (action == RobotAction.Go && Map.TryGetTile(Position, out r) && (r == MapTileResult.LeverA || r == MapTileResult.LeverB))
             {
                 // reshitch lever
                 return new[] {
@@ -196,7 +197,12 @@ namespace LtpRobot
             int i = 0;
             foreach (var r in Client.BatchExecute(RobotId, BufferLocation.Actions))
             {
-                if (r.Result != RobotResult.Ok) { if (throwOnWtf) throw new Exception("FUCK"); }
+                if (r.Result != RobotResult.Ok) { if (throwOnWtf)
+                    {
+                        Program.ss.Speak(string.Join(" ", Enumerable.Repeat("Fuck!", 50)));
+                        throw new Exception("FUCK");
+                    }
+                }
                 else
                 {
                     MoveResult(BufferLocation.Actions[i++]);

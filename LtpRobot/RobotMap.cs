@@ -4,98 +4,43 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace LtpRobot
 {
     public class RobotMap
     {
         public event Action Changed;
-        //public Dictionary<Point, MapTileResult> Map = new Dictionary<Point, MapTileResult>() { { new Point(0, 0), MapTileResult.Free } };
-
-        public int OffsetX = 512;
-        public int OffsetY = 512;
-        public int Width = 1024;
-        public int Height = 1024;
-        public MapTileResult[] Array = new MapTileResult[1024 * 1024];
+        public Dictionary<Point, MapTileResult> Map = new Dictionary<Point, MapTileResult>() { { new Point(0, 0), MapTileResult.Free } };
 
         public MapTileResult this[Point p]
         {
-            get { return Array[p.X + OffsetX + (p.Y + OffsetY) * Width]; }
-            set { EnsureSize(p.X, p.Y); Array[p.X + OffsetX + (p.Y + OffsetY) * Width] = value; }
+            get { return Map[p]; }
+            set { Map[p] = value; }
         }
 
         public MapTileResult this[int x, int y]
         {
-            get { return Array[x + OffsetX + (y + OffsetY) * Width]; }
-            set { EnsureSize(x, y); Array[x + OffsetX + (y + OffsetY) * Width] = value; }
-        }
-
-        public bool EnsureSize(int x, int y)
-        {
-            int nOffX = OffsetX;
-            int nOffY = OffsetY;
-            while (x < -nOffX) nOffX *= 2;
-            while (y < -nOffY) nOffY *= 2;
-            var nWidth = Width - OffsetX + nOffX;
-            var nHeight = Height - OffsetY + nOffY;
-            while (x + nOffX >= nWidth) nWidth *= 2;
-            while (y + nOffY >= nHeight) nHeight *= 2;
-
-            if (nOffY == OffsetY && nOffX == OffsetX && nWidth == Width && nHeight == Height) return true;
-            var narr = new MapTileResult[nWidth * nHeight];
-            CopyTo(narr, nOffX, nOffY, nWidth, nHeight);
-            Array = narr;
-            OffsetX = nOffX;
-            OffsetY = nOffY;
-            Width = nWidth;
-            Height = nHeight;
-            return false;
-        }
-
-        private void CopyTo(MapTileResult[] arr, int offsetX, int offsetY, int width, int height)
-        {
-            int i = 0;
-            for (int y = 0; y < Height; y++)
-            {
-                for (int x = 0; x < Width; x++)
-                {
-                    var ax = (x - OffsetX) + offsetX;
-                    var ay = (y - OffsetY) + offsetY;
-                    if (ax >= 0 && ay >= 0 && ax < width && ay < height)
-                    {
-                        arr[ax + ay * width] = Array[i];
-                    }
-
-                    i++;
-                }
-            }
-        }
-
-        public bool TryGetTile(Point p, out MapTileResult tile)
-        {
-            var ax = p.X + OffsetX;
-            var ay = p.Y + OffsetY;
-            if (ay < 0 || ax < 0 || ay >= Height || ax >= Width)
-            {
-                tile = MapTileResult.Unknown; return false;
-            }
-            tile = Array[ax + ay * Width];
-            return tile != MapTileResult.Unknown;
+            get { return Map[new Point(x, y)]; }
+            set { Map[new Point(x, y)] = value; }
         }
 
         public bool Explored(Point p)
         {
-            MapTileResult r;
-            return TryGetTile(p, out r);
+            return Map.ContainsKey(p);
         }
 
-        //public void AddMap(RobotMap map, Point offset)
-        //{
-        //    foreach (var item in map.Map)
-        //    {
-        //        Map.Add(item.Key + offset, item.Value);
-        //    }
-        //}
+        public bool TryGetTile(Point p, out MapTileResult r)
+            => Map.TryGetValue(p, out r);
+
+        public void AddMap(RobotMap map, Point offset)
+        {
+            foreach (var item in map.Map)
+            {
+                Map.Add(item.Key + offset, item.Value);
+            }
+        }
 
         public string[] PrintMap(int xMin, int yMin, int width, int heigth, Point robotPosition)
         {
@@ -112,15 +57,15 @@ namespace LtpRobot
                     {
                         ch[x] = '&';
                     }
-                    else if (Explored(p))
+                    else if (Map.ContainsKey(p))
                     {
-                        ch[x] = (char)this[p];
+                        ch[x] = (char)Map[p];
                     }
                     else ch[x] = ' ';
                 }
                 result[y] = new string(ch);
             }
-            System.Array.Reverse(result);
+            Array.Reverse(result);
             return result;
         }
 
@@ -132,56 +77,8 @@ namespace LtpRobot
         public void Save(string name)
         {
             name = $"{ DateTime.Now.ToString("dd_MM_yy__hh.mm.ss") }xx{name}.txt";
-            using (var writer = new StreamWriter(name))
-            {
-                for (int y = 0; y < Height; y++)
-                {
-                    for (int x = 0; x < Width; x++)
-                    {
-                        MapTileResult r;
-                        if(TryGetTile(new Point(x, y), out r))
-                        {
-                            writer.WriteLine($"[{x},{y}]:{(int)r}");
-                        }
-                    }
-                }
-            }
-        }
-
-        public void NewSave(string name)
-        {
-            name = $"{ DateTime.Now.ToString("dd_MM_yy__hh.mm.ss") }xx{name}.robomap";
-            using (var file = File.OpenWrite(name))
-            {
-                using (var bw = new BinaryWriter(file, Encoding.ASCII, true))
-                {
-                    bw.Write(OffsetX);
-                    bw.Write(OffsetY);
-                    bw.Write(Width);
-                    bw.Write(Height);
-                }
-                var buffer = new byte[Array.Length];
-                Buffer.BlockCopy(Array, 0, buffer, 0, Array.Length);
-                file.Write(buffer, 0, buffer.Length);
-            }
-        }
-
-        public void NewLoadMap(string fileName)
-        {
-            using (var file = File.OpenRead(fileName))
-            {
-                using (var bw = new BinaryReader(file, Encoding.ASCII, true))
-                {
-                    OffsetX = bw.ReadInt32();
-                    OffsetY = bw.ReadInt32();
-                    Height = bw.ReadInt32();
-                    Width = bw.ReadInt32();
-                }
-                var buffer = new byte[Width * Height];
-                file.Read(buffer, 0, buffer.Length);
-                Array = new MapTileResult[Width * Height];
-                Buffer.BlockCopy(buffer, 0, Array, 0, buffer.Length);
-            }
+            var collection = Map.ToArray().Select(s => $"[{s.Key.X},{s.Key.Y}]:{(int)s.Value}");
+            File.WriteAllLines(name, collection);
         }
 
         public void LoadMap(string fileName)
@@ -191,15 +88,60 @@ namespace LtpRobot
                 while (true)
                 {
                     var line = reader.ReadLine();
-                    if (string.IsNullOrWhiteSpace(line)) return;
+                    if (string.IsNullOrWhiteSpace(line)) break;
                     var s = line.Split(':');
                     var p = s[0].Substring(1, s[0].Length - 2);
                     var ps = p.Split(',');
                     var point = new Point(int.Parse(ps[0]), int.Parse(ps[1]));
                     var ch = int.Parse(s[1]);
-                    this[point] = (MapTileResult)(char)ch;
+                    Map[point] = (MapTileResult)(char)ch;
                 }
+                Program.Say("file loaded");
             }
+        }
+
+        public void ExportPicture(string name)
+        {
+            var minX = -3000; /*Map.Keys.Min(m => m.X);*/
+            var minY = -3000; /*Map.Keys.Min(m => m.Y);*/
+            var maxX = 4000; /*Map.Keys.Max(m => m.X);*/
+            var maxY = 4000; /*Map.Keys.Max(m => m.Y);*/
+            var width = (maxX - minX);
+            var height = (maxY - minY);
+            var bitmap = new Bitmap(width, height) ;
+            var i = 0;
+            foreach (var item in Map)
+            {
+                var x = (item.Key.X - minX);
+                var y = (item.Key.Y - minY);
+                if (x < 0 || y < 0 || x >= width || y >= height) continue;
+                Color c = Color.Green;
+                switch (item.Value)
+                {
+                    case MapTileResult.Free:
+                        c = Color.Yellow;
+                        break;
+                    case MapTileResult.Wall:
+                        c = Color.DarkBlue;
+                        break;
+                    case MapTileResult.Goal:
+                        c = Color.Gold;
+                        break;
+                    case MapTileResult.Robot:
+                        break;
+                    case MapTileResult.ClosedDoor:
+                        break;
+                    case MapTileResult.OpenDoor:
+                        break;
+                    case MapTileResult.LeverA:
+                        break;
+                    case MapTileResult.LeverB:
+                        break;
+                }
+                bitmap.SetPixel(x, y, c);
+                i++;
+            }
+            bitmap.Save(name);
         }
     }
 }

@@ -29,15 +29,15 @@ namespace LtpRobot
                     Client.Reset();
                 } },
                 {"save", p => (p.Length == 0 ? CurrentRobot : GetRobot(int.Parse(p[0]))).Map.Save(p.FirstOrDefault() ?? CurrentRobotId.ToString()) },
-                { "nsave", p=> (p.Length == 0 ? CurrentRobot : GetRobot(int.Parse(p[0]))).Map.NewSave(p.FirstOrDefault() ?? CurrentRobotId.ToString()) },
+                //{ "nsave", p=> (p.Length == 0 ? CurrentRobot : GetRobot(int.Parse(p[0]))).Map.NewSave(p.FirstOrDefault() ?? CurrentRobotId.ToString()) },
                 {"load", p => CurrentRobot.Map.LoadMap(p[0]) },
-                {"nload", p => CurrentRobot.Map.NewLoadMap(p[0]) },
-                {"autoload", p=> CurrentRobot.Map.NewLoadMap(new DirectoryInfo(".").EnumerateFiles("*.robomap").OrderByDescending(f => f.LastWriteTime).First().FullName) },
+                //{"nload", p => CurrentRobot.Map.NewLoadMap(p[0]) },
+                //{"autoload", p=> CurrentRobot.Map.NewLoadMap(new DirectoryInfo(".").EnumerateFiles("*.robomap").OrderByDescending(f => f.LastWriteTime).First().FullName) },
                 {"explore", p =>SetRobotControler(CurrentRobotId, new ExploreRobotControler(), p) },
                 {"random", p => {
                     var len = int.Parse(p[0]);
                     var random = new Random();
-                    
+
                 } },
                 {"gohome", p => CurrentRobot.GoHome() },
                 {"urandom", p =>
@@ -47,7 +47,8 @@ namespace LtpRobot
                         foreach (var i in CurrentRobot.Client.BatchExecute(CurrentRobot.RobotId, RandomStream(50000)))
                         { }
                     }
-                } }
+                } },
+                {"image", p => CurrentRobot.Map.ExportPicture(p[0]) }
             };
         }
 
@@ -138,6 +139,12 @@ namespace LtpRobot
         public CancellationTokenSource cts = null;
         public Dictionary<string, Action<string[]>> Commands;
 
+
+        public async void WaitForVoiceCommand()
+        {
+            var r = new System.Speech.Recognition.SpeechRecognizer();
+        }
+
         public void ConsoleClient()
         {
             while (true)
@@ -179,6 +186,10 @@ namespace LtpRobot
                     {
                         var ri = int.Parse(Console.ReadLine());
                         if (renderer != null) renderer.Dispose();
+                        //for (int ll = 0; ll < 50; ll++)
+                        //{
+                        //    Program.ss.Speak("Fuck!");
+                        //}
                         renderer = null;
                         CurrentRobotId = ri;
                     }

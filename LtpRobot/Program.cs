@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Speech.Synthesis;
 
 namespace LtpRobot
 {
@@ -10,10 +11,20 @@ namespace LtpRobot
     {
         static void Main(string[] args)
         {
-            var c = Connect("rumpal");
+            ss = new SpeechSynthesizer();
+            ss.SelectVoiceByHints(VoiceGender.Neutral);
+            ss.SetOutputToDefaultAudioDevice();
+            //var c = Connect("rumpal");
             var gm = new GameManager();
-            gm.Client = c;
+            gm.Client = null;
             gm.ConsoleClient();
+        }
+        public static SpeechSynthesizer ss;
+
+        public static void Say(string text)
+        {
+            //ss.SpeakAsyncCancelAll();
+            //ss.SpeakAsync(text);
         }
 
         public static void ConsoleClient(RobotClient c)
@@ -52,7 +63,9 @@ namespace LtpRobot
 
         public static RobotClient Connect(string token, string userName = "exyi")
         {
+            //return null;
             var c = RobotClient.Connect("duncan.upir.cz", 3333);
+            Program.Say("Hello, connected to " + token);
             c.Init(userName, token);
             return c;
         }

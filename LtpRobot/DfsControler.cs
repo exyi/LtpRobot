@@ -16,7 +16,7 @@ namespace LtpRobot
             DoDfs(robot, token, int.Parse(args.FirstOrDefault() ?? int.MaxValue.ToString()));
         }
 
-        public bool NextStep(RobotManager robot, RobotResult result, int limit)
+        public bool NextStep(RobotManager robot, int limit)
         {
             if (robot.Position.NearFour().Any(n => !robot.Map.Explored(n)))
             {
@@ -45,13 +45,13 @@ namespace LtpRobot
                 (robot.Map.Explored(robot.Position) && robot.Map[robot.Position] == MapTileResult.OpenDoor)*/)
             {
                 if (robot.Path.Count == 0) return false;
-                StackUnroll(robot, limit);
+                return StackUnroll(robot, limit);
             }
             else robot.GoTo((Rotation)mi);
             return true;
         }
 
-        private void StackUnroll(RobotManager robot, int limit)
+        private bool StackUnroll(RobotManager robot, int limit)
         {
             var pos = robot.Position;
             var count = 0;
@@ -65,7 +65,7 @@ namespace LtpRobot
                         if(!robot.Map.TryGetTile(n, out mt) || (mt.IsFree() &&
                             !n.NearFour().All(robot.Map.Explored)))
                         {
-                            break;
+                            goto BreakCycles;
                         }
                     }
                 }
@@ -76,7 +76,12 @@ namespace LtpRobot
                 count++;
                 pos = pos.Move((byte)robot.Path[robot.Path.Count - count].Rot180());
             }
-            if (count == 1)
+            BreakCycles:
+            if (count == robot.Path.Count)
+            {
+                return false;
+            }
+            else if (count == 1)
             {
                 robot.GoTo(robot.Path[robot.Path.Count - 1].Rot180());
             }
@@ -86,6 +91,7 @@ namespace LtpRobot
                 robot.GoTo(pos, restorePath: false, flushOnNewData: false);
                 robot.Path = newPath;
             }
+            return true;
         }
 
         private int GetPriority(RobotMap map, Point p, int rotation)
@@ -108,8 +114,7 @@ namespace LtpRobot
         {
             try
             {
-                var r = robot.Move(RobotAction.Wait);
-                while (!token.IsCancellationRequested && NextStep(robot, r, limit))
+                while (!token.IsCancellationRequested && NextStep(robot, limit))
                 {
                 }
             }

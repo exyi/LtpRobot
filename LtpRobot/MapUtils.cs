@@ -32,6 +32,14 @@ namespace LtpRobot
             return GetPath(d, from, p);
         }
 
+        public static Point NearestNonExploredPoint(this RobotMap map, Point from)
+        {
+            var d = new Dictionary<Point, int>() { { from, 0 } };
+            var q = new Queue<Point>(); q.Enqueue(from);
+
+            return FindFirstPoint(d, q, map, point => point.NearFour().Any(n => !map.Explored(n)));
+        }
+
         private static Point FindFirstPoint(Dictionary<Point, int> d, Queue<Point> q, RobotMap map, Predicate<Point> goalPredicate)
         {
             while (q.Count > 0)

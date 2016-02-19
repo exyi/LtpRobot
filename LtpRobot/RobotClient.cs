@@ -61,7 +61,7 @@ namespace LtpRobot
 
         public IEnumerable<RobotActionResult> BatchExecute(int ri, ICollection<RobotAction> actions)
         {
-            if (actions.Count <= 3)
+            if (actions.Count <= 9)
             {
                 foreach (var a in actions)
                 {
@@ -87,6 +87,7 @@ namespace LtpRobot
                 if (dummyWait) reader.ReadLine();
                 writer.Write(ri + " w" + '\n');
                 dummyWait = true;
+                //writer.Write("\n");
                 Interlocked.Increment(ref Counter);
                 yield return Parse(reader.ReadLine());
                 writer.Flush();
